@@ -1,12 +1,11 @@
-
 import sqlite3
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "games.db"
 
 
-def initialize_db():
-    with sqlite3.connect(DB_PATH) as connection:
+def initialize_db(db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
         connection.execute("""
             CREATE TABLE IF NOT EXISTS games (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,3 +26,31 @@ def initialize_db():
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+
+def add_game(rawg_id, name, released=None, rating=None, db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO games (rawg_id, name, released, rating)
+            VALUES (?, ?, ?, ?)
+            """,
+            (rawg_id, name, released, rating),
+        )
+
+        return cursor.lastrowid
+
+
+def get_games(db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+
+        rows = connection.execute(
+            """
+            SELECT id, rawg_id, name, released, rating, status, notes
+            FROM games
+            ORDER BY name COLLATE NOCASE
+            """
+        ).fetchall()
+
+        return [dict(row) for row in rows]
