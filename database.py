@@ -54,3 +54,15 @@ def get_games(db_path=DB_PATH):
         ).fetchall()
 
         return [dict(row) for row in rows]
+
+
+def get_game_by_rawg_id(rawg_id, db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+
+        row = connection.execute(
+            "SELECT * FROM games WHERE rawg_id = ?",
+            (rawg_id,),
+        ).fetchone()
+
+        return dict(row) if row else None
