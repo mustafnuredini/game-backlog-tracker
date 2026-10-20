@@ -7,6 +7,7 @@ from database import (
     add_game,
     get_game_by_rawg_id,
     initialize_db,
+    get_games,
 )
 
 load_dotenv()
@@ -98,37 +99,72 @@ def save_game(game):
     print(f"Saved {game.get('name', 'game')} to your backlog! (ID: {game_id})")
 
 
+def view_backlog():
+    games = get_games()
+
+    if not games:
+        print("\nYour backlog is empty.")
+        return
+
+    print("\n--- Your Game Backlog ---")
+
+    for game in games:
+        print(f"\nID: {game['id']}")
+        print(f"Game: {game['name']}")
+        print(f"Status: {game['status']}")
+        print(f"Release date: {game['released'] or 'Unknown'}")
+        print(
+            f"Rating: {game['rating'] if game['rating'] is not None else 'Not rated'}")
+        print(f"Notes: {game['notes'] or 'None'}")
+
+
 def main():
     initialize_db()
 
-    print("Welcome to Game Backlog Tracker!")
-    game_name = input("Enter a game to search for: ")
+    while True:
+        print("\n=== Game Backlog Tracker ===")
+        print("1. Search for and save a game")
+        print("2. View my backlog")
+        print("3. Exit")
 
-    games = search_games(game_name)
+        choice = input("Choose an option: ").strip()
 
-    if not games:
-        return
+        if choice == "1":
+            game_name = input("Enter a game to search for: ")
+            games = search_games(game_name)
 
-    choice = input(
-        "\nEnter the number of a game to save it, "
-        "or press Enter to exit: "
-    ).strip()
+            if not games:
+                continue
 
-    if not choice:
-        print("No game saved.")
-        return
+            selection = input(
+                "\nEnter the number of a game to save, "
+                "or press Enter to cancel: "
+            ).strip()
 
-    try:
-        index = int(choice)
-    except ValueError:
-        print("Please enter a valid number.")
-        return
+            if not selection:
+                continue
 
-    if index < 1 or index > len(games):
-        print("That number is not in the search results.")
-        return
+            try:
+                index = int(selection)
+            except ValueError:
+                print("Please enter a valid number.")
+                continue
 
-    save_game(games[index - 1])
+            if index < 1 or index > len(games):
+                print("That number is not in the search results.")
+                continue
+
+            save_game(games[index - 1])
+
+        elif choice == "2":
+            view_backlog()
+
+        elif choice == "3":
+            print("Thanks for using Game Backlog Tracker!")
+            break
+
+        else:
+            print("Invalid option. Please choose 1, 2, or 3.")
 
 
 if __name__ == "__main__":
