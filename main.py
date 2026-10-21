@@ -8,6 +8,7 @@ from database import (
     get_game_by_rawg_id,
     initialize_db,
     get_games,
+    update_game_status
 )
 
 load_dotenv()
@@ -118,6 +119,59 @@ def view_backlog():
         print(f"Notes: {game['notes'] or 'None'}")
 
 
+def change_game_status():
+    games = get_games()
+
+    if not games:
+        print("\nYour backlog is empty.")
+        return
+
+    view_backlog()
+
+    game_id_input = input(
+        "\nEnter the ID of the game to update: "
+    ).strip()
+
+    try:
+        game_id = int(game_id_input)
+    except ValueError:
+        print("Please enter a valid numeric ID.")
+        return
+
+    valid_statuses = [
+        "Want to Play",
+        "Playing",
+        "Completed",
+        "Dropped",
+    ]
+
+    print("\nChoose a new status:")
+
+    for index, status in enumerate(valid_statuses, start=1):
+        print(f"{index}. {status}")
+
+    status_input = input("Enter your choice: ").strip()
+
+    try:
+        status_index = int(status_input)
+    except ValueError:
+        print("Please enter a valid number.")
+        return
+
+    if status_index < 1 or status_index > len(valid_statuses):
+        print("Invalid status selection.")
+        return
+
+    new_status = valid_statuses[status_index - 1]
+
+    updated = update_game_status(game_id, new_status)
+
+    if updated:
+        print(f"Game status updated to '{new_status}'.")
+    else:
+        print(f"No game found with ID {game_id}.")
+
+
 def main():
     initialize_db()
 
@@ -125,7 +179,8 @@ def main():
         print("\n=== Game Backlog Tracker ===")
         print("1. Search for and save a game")
         print("2. View my backlog")
-        print("3. Exit")
+        print("3. Change a game's status")
+        print("4. Exit")
 
         choice = input("Choose an option: ").strip()
 
@@ -160,11 +215,14 @@ def main():
             view_backlog()
 
         elif choice == "3":
+            change_game_status()
+
+        elif choice == "4":
             print("Thanks for using Game Backlog Tracker!")
             break
 
         else:
-            print("Invalid option. Please choose 1, 2, or 3.")
+            print("Invalid option. Please choose 1, 2, 3, or 4.")
 
 
 if __name__ == "__main__":

@@ -66,3 +66,23 @@ def get_game_by_rawg_id(rawg_id, db_path=DB_PATH):
         ).fetchone()
 
         return dict(row) if row else None
+
+
+def update_game_status(game_id, status, db_path=DB_PATH):
+    allowed_statuses = {
+        "Want to Play",
+        "Playing",
+        "Completed",
+        "Dropped",
+    }
+
+    if status not in allowed_statuses:
+        raise ValueError(f"Invalid game status: {status}")
+
+    with sqlite3.connect(db_path) as connection:
+        cursor = connection.execute(
+            "UPDATE games SET status = ? WHERE id = ?",
+            (status, game_id),
+        )
+
+        return cursor.rowcount > 0

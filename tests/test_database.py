@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from database import add_game, get_games, initialize_db
+from database import add_game, get_games, initialize_db, update_game_status
 
 
 @pytest.fixture
@@ -40,3 +40,37 @@ def test_duplicate_rawg_id_rejected(test_db):
 
     with pytest.raises(sqlite3.IntegrityError):
         add_game(12345, "Duplicate Elden Ring", db_path=test_db)
+
+
+def test_update_game_status(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    result = update_game_status(
+        game_id,
+        "Playing",
+        db_path=test_db,
+    )
+
+    assert result is True
+
+    games = get_games(db_path=test_db)
+    assert games[0]["status"] == "Playing"
+
+
+def test_update_game_status_rejects_invalid_status(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    with pytest.raises(ValueError):
+        update_game_status(
+            game_id,
+            "In Progress",
+            db_path=test_db,
+        )
