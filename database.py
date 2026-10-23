@@ -86,3 +86,13 @@ def update_game_status(game_id, status, db_path=DB_PATH):
         )
 
         return cursor.rowcount > 0
+
+
+def delete_game(game_id, db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        cursor = connection.execute(
+            "DELETE FROM games WHERE id = ?",
+            (game_id,),
+        )
+
+        return cursor.rowcount > 0

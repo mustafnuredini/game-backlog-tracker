@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from database import (
     add_game,
+    delete_game,
     get_game_by_rawg_id,
     initialize_db,
     get_games,
@@ -172,6 +173,49 @@ def change_game_status():
         print(f"No game found with ID {game_id}.")
 
 
+def delete_game_from_backlog():
+    games = get_games()
+
+    if not games:
+        print("\nYour backlog is empty.")
+        return
+
+    view_backlog()
+
+    game_id_input = input(
+        "\nEnter the ID of the game to delete: "
+    ).strip()
+
+    try:
+        game_id = int(game_id_input)
+    except ValueError:
+        print("Please enter a valid numeric ID.")
+        return
+
+    game_exists = any(
+        game["id"] == game_id for game in games
+    )
+
+    if not game_exists:
+        print(f"No game found with ID {game_id}.")
+        return
+
+    confirmation = input(
+        "Are you sure you want to delete this game? (y/n): "
+    ).strip().lower()
+
+    if confirmation != "y":
+        print("Deletion cancelled.")
+        return
+
+    deleted = delete_game(game_id)
+
+    if deleted:
+        print("Game deleted successfully.")
+    else:
+        print("Could not find the game to delete.")
+
+
 def main():
     initialize_db()
 
@@ -180,7 +224,8 @@ def main():
         print("1. Search for and save a game")
         print("2. View my backlog")
         print("3. Change a game's status")
-        print("4. Exit")
+        print("4. Delete a game")
+        print("5. Exit")
 
         choice = input("Choose an option: ").strip()
 
@@ -218,11 +263,14 @@ def main():
             change_game_status()
 
         elif choice == "4":
+            delete_game_from_backlog()
+
+        elif choice == "5":
             print("Thanks for using Game Backlog Tracker!")
             break
 
         else:
-            print("Invalid option. Please choose 1, 2, 3, or 4.")
+            print("Invalid option. Please choose 1, 2, 3, 4, or 5.")
 
 
 if __name__ == "__main__":

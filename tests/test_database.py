@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from database import add_game, get_games, initialize_db, update_game_status
+from database import add_game, get_games, initialize_db, update_game_status, delete_game
 
 
 @pytest.fixture
@@ -74,3 +74,18 @@ def test_update_game_status_rejects_invalid_status(test_db):
             "In Progress",
             db_path=test_db,
         )
+
+
+def test_delete_game(test_db):
+    game_id = add_game(12345, "Elden Ring", db_path=test_db)
+
+    result = delete_game(game_id, db_path=test_db)
+
+    assert result is True
+    assert get_games(db_path=test_db) == []
+
+
+def test_delete_nonexistent_game(test_db):
+    result = delete_game(99999, db_path=test_db)
+
+    assert result is False
