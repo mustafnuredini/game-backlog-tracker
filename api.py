@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
-from database import get_games, get_game_by_rawg_id, add_game
+from database import get_games, get_game_by_rawg_id, add_game, update_game_status
 from pydantic import BaseModel, Field
+from typing import Literal
 
 app = FastAPI(
     title="Game Backlog Tracker API",
@@ -14,6 +15,15 @@ class GameCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     released: str | None = None
     rating: float | None = Field(default=None, ge=0, le=5)
+
+
+class GameStatusUpdate(BaseModel):
+    status: Literal[
+        "Want to Play",
+        "Playing",
+        "Completed",
+        "Dropped",
+    ]
 
 
 @app.get("/")
@@ -56,4 +66,21 @@ def create_game(game: GameCreate):
         "rating": game.rating,
         "status": "Want to Play",
         "notes": "",
+    }
+
+
+@app.patch("/games/{game_id}")
+def update_status(game_id: int, update: GameStatusUpdate):
+    updated = update_game_status(game_id, update.status)
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Game with ID {game_id} not found.",
+        )
+
+    return {
+        "id": game_id,
+        "status": update.status,
+        "message": "Game status updated successfully.",
     }

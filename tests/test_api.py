@@ -1,7 +1,7 @@
 import pytest
+import api
 from fastapi.testclient import TestClient
 
-import api
 
 client = TestClient(api.app)
 
@@ -63,6 +63,47 @@ def test_create_game_rejects_invalid_data():
             "name": "",
             "rating": 8,
         },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_game_status_success(monkeypatch):
+    monkeypatch.setattr(
+        api,
+        "update_game_status",
+        lambda game_id, status: True,
+    )
+
+    response = client.patch(
+        "/games/1",
+        json={"status": "Playing"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    assert response.json()["status"] == "Playing"
+
+
+def test_update_nonexistent_game_returns_404(monkeypatch):
+    monkeypatch.setattr(
+        api,
+        "update_game_status",
+        lambda game_id, status: False,
+    )
+
+    response = client.patch(
+        "/games/99999",
+        json={"status": "Completed"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_game_status_rejects_invalid_status():
+    response = client.patch(
+        "/games/1",
+        json={"status": "In Progress"},
     )
 
     assert response.status_code == 422
