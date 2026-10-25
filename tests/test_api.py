@@ -107,3 +107,33 @@ def test_update_game_status_rejects_invalid_status():
     )
 
     assert response.status_code == 422
+
+
+def test_delete_game_success(monkeypatch):
+    monkeypatch.setattr(
+        api,
+        "delete_game",
+        lambda game_id: True,
+    )
+
+    response = client.delete("/games/1")
+
+    assert response.status_code == 200
+    assert response.json()["message"] == (
+        "Game 1 deleted successfully."
+    )
+
+
+def test_delete_nonexistent_game_returns_404(monkeypatch):
+    monkeypatch.setattr(
+        api,
+        "delete_game",
+        lambda game_id: False,
+    )
+
+    response = client.delete("/games/99999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Game with ID 99999 not found."
+    )

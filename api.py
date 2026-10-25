@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from database import get_games, get_game_by_rawg_id, add_game, update_game_status
+from database import get_games, get_game_by_rawg_id, add_game, update_game_status, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
 
@@ -84,3 +84,16 @@ def update_status(game_id: int, update: GameStatusUpdate):
         "status": update.status,
         "message": "Game status updated successfully.",
     }
+
+
+@app.delete("/games/{game_id}")
+def remove_game(game_id: int):
+    deleted = delete_game(game_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Game with ID {game_id} not found.",
+        )
+
+    return {"message": f"Game {game_id} deleted successfully."}
