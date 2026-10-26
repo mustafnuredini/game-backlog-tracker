@@ -3,6 +3,7 @@ from database import get_games, get_game_by_rawg_id, add_game, update_game_statu
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
+import sqlite3
 
 app = FastAPI(
     title="Game Backlog Tracker API",
@@ -52,12 +53,22 @@ def create_game(game: GameCreate):
             detail="This game is already in your backlog.",
         )
 
-    game_id = add_game(
-        rawg_id=game.rawg_id,
-        name=game.name.strip(),
-        released=game.released.isoformat() if game.released else None,
-        rating=game.rating,
-    )
+    try:
+        game_id = add_game(
+            rawg_id=game.rawg_id,
+            name=game.name.strip(),
+            released=(
+                game.released.isoformat()
+                if game.released
+                else None
+            ),
+            rating=game.rating,
+        )
+    except sqlite3.IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="This game is already in your backlog.",
+        )
 
     return {
         "id": game_id,

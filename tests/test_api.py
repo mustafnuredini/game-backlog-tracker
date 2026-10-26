@@ -1,5 +1,6 @@
 import pytest
 import api
+import sqlite3
 from fastapi.testclient import TestClient
 
 
@@ -151,3 +152,35 @@ def test_create_game_rejects_invalid_release_date():
     )
 
     assert response.status_code == 422
+
+
+def test_create_game_handles_database_duplicate(monkeypatch):
+    monkeypatch.setattr(
+        api,
+        "get_game_by_rawg_id",
+        lambda rawg_id: None,
+    )
+
+    def raise_integrity_error(**kwargs):
+        raise sqlite3.IntegrityError("UNIQUE constraint failed")
+
+    monkeypatch.setattr(
+        api,
+        "add_game",
+        raise_integrity_error,
+    )
+
+    response = client.post(
+        "/games",
+        json={
+            "rawg_id": 999999,
+            "name": "Test Game",
+            "released": "2025-01-01",
+            "rating": 4.2,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == (
+        "This game is already in your backlog."
+    )
