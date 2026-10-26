@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from database import get_games, get_game_by_rawg_id, add_game, update_game_status, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
+from datetime import date
 
 app = FastAPI(
     title="Game Backlog Tracker API",
@@ -13,7 +14,7 @@ app = FastAPI(
 class GameCreate(BaseModel):
     rawg_id: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=200)
-    released: str | None = None
+    released: date | None = None
     rating: float | None = Field(default=None, ge=0, le=5)
 
 
@@ -54,7 +55,7 @@ def create_game(game: GameCreate):
     game_id = add_game(
         rawg_id=game.rawg_id,
         name=game.name.strip(),
-        released=game.released,
+        released=game.released.isoformat() if game.released else None,
         rating=game.rating,
     )
 
@@ -62,7 +63,7 @@ def create_game(game: GameCreate):
         "id": game_id,
         "rawg_id": game.rawg_id,
         "name": game.name.strip(),
-        "released": game.released,
+        "released": game.released.isoformat() if game.released else None,
         "rating": game.rating,
         "status": "Want to Play",
         "notes": "",

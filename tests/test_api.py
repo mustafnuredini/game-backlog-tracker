@@ -137,3 +137,17 @@ def test_delete_nonexistent_game_returns_404(monkeypatch):
     assert response.json()["detail"] == (
         "Game with ID 99999 not found."
     )
+
+
+def test_create_game_rejects_invalid_release_date():
+    response = client.post(
+        "/games",
+        json={
+            "rawg_id": 999999,
+            "name": "Test Game",
+            "released": "not-a-date",
+            "rating": 4.2,
+        },
+    )
+
+    assert response.status_code == 422
