@@ -39,8 +39,17 @@ def health_check():
 
 
 @app.get("/games")
-def list_games():
-    return get_games()
+def list_games(status: str | None = None):
+    games = get_games()
+
+    if status is not None:
+        games = [
+            game
+            for game in games
+            if game["status"].lower() == status.lower()
+        ]
+
+    return games
 
 
 @app.post("/games", status_code=201)

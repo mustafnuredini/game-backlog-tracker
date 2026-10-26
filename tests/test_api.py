@@ -184,3 +184,62 @@ def test_create_game_handles_database_duplicate(monkeypatch):
     assert response.json()["detail"] == (
         "This game is already in your backlog."
     )
+
+
+def test_list_games_returns_all_games(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games")
+
+    assert response.status_code == 200
+    assert response.json() == sample_games
+
+
+def test_list_games_filters_by_status(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?status=Playing")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"}
+    ]
+
+
+def test_list_games_filters_by_status_case_insensitive(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?status=playing")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["name"] == "Elden Ring"
+
+
+def test_list_games_returns_empty_list_when_no_games_match(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?status=Dropped")
+
+    assert response.status_code == 200
+    assert response.json() == []
