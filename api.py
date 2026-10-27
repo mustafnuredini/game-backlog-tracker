@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from database import get_games, get_game_by_rawg_id, add_game, update_game_status, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -39,14 +39,38 @@ def health_check():
 
 
 @app.get("/games")
-def list_games(status: str | None = None):
+def list_games(
+    status: str | None = Query(default=None),
+):
     games = get_games()
 
     if status is not None:
+        valid_statuses = [
+            "Want to Play",
+            "Playing",
+            "Completed",
+            "Dropped",
+        ]
+
+        matching_status = next(
+            (
+                valid_status
+                for valid_status in valid_statuses
+                if valid_status.lower() == status.lower()
+            ),
+            None,
+        )
+
+        if matching_status is None:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid status: {status}",
+            )
+
         games = [
             game
             for game in games
-            if game["status"].lower() == status.lower()
+            if game["status"] == matching_status
         ]
 
     return games

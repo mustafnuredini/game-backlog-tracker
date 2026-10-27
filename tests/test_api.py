@@ -243,3 +243,17 @@ def test_list_games_returns_empty_list_when_no_games_match(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_list_games_rejects_invalid_status(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?status=banana")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Invalid status: banana"
