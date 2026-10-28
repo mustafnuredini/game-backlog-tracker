@@ -41,6 +41,8 @@ def health_check():
 @app.get("/games")
 def list_games(
     status: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
 ):
     games = get_games()
 
@@ -73,7 +75,7 @@ def list_games(
             if game["status"] == matching_status
         ]
 
-    return games
+    return games[offset:offset + limit]
 
 
 @app.post("/games", status_code=201)

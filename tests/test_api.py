@@ -257,3 +257,51 @@ def test_list_games_rejects_invalid_status(monkeypatch):
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Invalid status: banana"
+
+
+def test_list_games_respects_limit_and_offset(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+        {"id": 3, "name": "Cyberpunk 2077", "status": "Playing"},
+        {"id": 4, "name": "Baldur's Gate 3", "status": "Want to Play"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?limit=2&offset=1")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+        {"id": 3, "name": "Cyberpunk 2077", "status": "Playing"},
+    ]
+
+
+def test_list_games_uses_default_limit(monkeypatch):
+    sample_games = [
+        {"id": i, "name": f"Game {i}", "status": "Playing"}
+        for i in range(1, 13)
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 10
+    assert response.json()[0]["name"] == "Game 1"
+    assert response.json()[-1]["name"] == "Game 10"
+
+
+def test_list_games_rejects_invalid_pagination_values():
+    invalid_requests = [
+        "/games?limit=0",
+        "/games?limit=101",
+        "/games?offset=-1",
+    ]
+
+    for url in invalid_requests:
+        response = client.get(url)
+
+        assert response.status_code == 422
