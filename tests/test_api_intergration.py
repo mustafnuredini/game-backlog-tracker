@@ -68,8 +68,9 @@ def test_complete_game_lifecycle(test_client):
     list_response = test_client.get("/games")
 
     assert list_response.status_code == 200
-    assert len(list_response.json()) == 1
-    assert list_response.json()[0]["name"] == (
+    assert list_response.json()["total"] == 1
+    assert len(list_response.json()["games"]) == 1
+    assert list_response.json()["games"][0]["name"] == (
         "Integration Test Game"
     )
 
@@ -82,7 +83,7 @@ def test_complete_game_lifecycle(test_client):
     assert update_response.status_code == 200
 
     updated_games = test_client.get("/games").json()
-    assert updated_games[0]["status"] == "Playing"
+    assert updated_games["games"][0]["status"] == "Playing"
 
     # 4. Delete the game.
     delete_response = test_client.delete(
@@ -90,7 +91,7 @@ def test_complete_game_lifecycle(test_client):
     )
 
     assert delete_response.status_code == 200
-    assert test_client.get("/games").json() == []
+    assert test_client.get("/games").json()["games"] == []
 
 
 def test_duplicate_game_is_rejected(test_client):
@@ -115,4 +116,5 @@ def test_duplicate_game_is_rejected(test_client):
     assert second_response.status_code == 409
 
     games = test_client.get("/games").json()
-    assert len(games) == 1
+    assert games["total"] == 1
+    assert len(games["games"]) == 1

@@ -75,7 +75,15 @@ def list_games(
             if game["status"] == matching_status
         ]
 
-    return games[offset:offset + limit]
+    total = len(games)
+    paginated_games = games[offset:offset + limit]
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "games": paginated_games,
+    }
 
 
 @app.post("/games", status_code=201)

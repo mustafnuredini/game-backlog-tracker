@@ -197,7 +197,10 @@ def test_list_games_returns_all_games(monkeypatch):
     response = client.get("/games")
 
     assert response.status_code == 200
-    assert response.json() == sample_games
+    assert response.json()["total"] == 2
+    assert response.json()["limit"] == 10
+    assert response.json()["offset"] == 0
+    assert response.json()["games"] == sample_games
 
 
 def test_list_games_filters_by_status(monkeypatch):
@@ -211,7 +214,8 @@ def test_list_games_filters_by_status(monkeypatch):
     response = client.get("/games?status=Playing")
 
     assert response.status_code == 200
-    assert response.json() == [
+    assert response.json()["total"] == 1
+    assert response.json()["games"] == [
         {"id": 1, "name": "Elden Ring", "status": "Playing"}
     ]
 
@@ -227,8 +231,9 @@ def test_list_games_filters_by_status_case_insensitive(monkeypatch):
     response = client.get("/games?status=playing")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["name"] == "Elden Ring"
+    assert response.json()["total"] == 1
+    assert len(response.json()["games"]) == 1
+    assert response.json()["games"][0]["name"] == "Elden Ring"
 
 
 def test_list_games_returns_empty_list_when_no_games_match(monkeypatch):
@@ -242,7 +247,8 @@ def test_list_games_returns_empty_list_when_no_games_match(monkeypatch):
     response = client.get("/games?status=Dropped")
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["total"] == 0
+    assert response.json()["games"] == []
 
 
 def test_list_games_rejects_invalid_status(monkeypatch):
@@ -272,7 +278,10 @@ def test_list_games_respects_limit_and_offset(monkeypatch):
     response = client.get("/games?limit=2&offset=1")
 
     assert response.status_code == 200
-    assert response.json() == [
+    assert response.json()["total"] == 4
+    assert response.json()["limit"] == 2
+    assert response.json()["offset"] == 1
+    assert response.json()["games"] == [
         {"id": 2, "name": "Minecraft", "status": "Completed"},
         {"id": 3, "name": "Cyberpunk 2077", "status": "Playing"},
     ]
@@ -289,9 +298,12 @@ def test_list_games_uses_default_limit(monkeypatch):
     response = client.get("/games")
 
     assert response.status_code == 200
-    assert len(response.json()) == 10
-    assert response.json()[0]["name"] == "Game 1"
-    assert response.json()[-1]["name"] == "Game 10"
+    assert response.json()["total"] == 12
+    assert response.json()["limit"] == 10
+    assert response.json()["offset"] == 0
+    assert len(response.json()["games"]) == 10
+    assert response.json()["games"][0]["name"] == "Game 1"
+    assert response.json()["games"][-1]["name"] == "Game 10"
 
 
 def test_list_games_rejects_invalid_pagination_values():
