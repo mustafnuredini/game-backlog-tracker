@@ -41,10 +41,27 @@ def health_check():
 @app.get("/games")
 def list_games(
     status: str | None = Query(default=None),
+    sort_by: str = Query(default="name"),
+    sort_order: str = Query(default="asc"),
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
     games = get_games()
+
+    valid_sort_fields = ["id", "name", "rating"]
+    valid_sort_orders = ["asc", "desc"]
+
+    if sort_by not in valid_sort_fields:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid sort field: {sort_by}",
+        )
+
+    if sort_order.lower() not in valid_sort_orders:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid sort order: {sort_order}",
+        )
 
     if status is not None:
         valid_statuses = [
@@ -76,6 +93,34 @@ def list_games(
         ]
 
     total = len(games)
+
+    if sort_order.lower() == "desc":
+        games = sorted(
+            games,
+            key=lambda game: (
+                game[sort_by] is None,
+                game[sort_by] if game[sort_by] is not None else 0
+            ),
+        )
+
+        games = sorted(
+            games,
+            key=lambda game: (
+                game[sort_by] is not None,
+                game[sort_by] if game[sort_by] is not None else 0
+            ),
+            reverse=True,
+        )
+
+    else:
+        games = sorted(
+            games,
+            key=lambda game: (
+                game[sort_by] is None,
+                game[sort_by] if game[sort_by] is not None else 0
+            ),
+        )
+
     paginated_games = games[offset:offset + limit]
 
     return {

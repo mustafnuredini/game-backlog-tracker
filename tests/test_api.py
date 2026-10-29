@@ -275,7 +275,7 @@ def test_list_games_respects_limit_and_offset(monkeypatch):
 
     monkeypatch.setattr("api.get_games", lambda: sample_games)
 
-    response = client.get("/games?limit=2&offset=1")
+    response = client.get("/games?sort_by=id&limit=2&offset=1")
 
     assert response.status_code == 200
     assert response.json()["total"] == 4
@@ -295,7 +295,7 @@ def test_list_games_uses_default_limit(monkeypatch):
 
     monkeypatch.setattr("api.get_games", lambda: sample_games)
 
-    response = client.get("/games")
+    response = client.get("/games?sort_by=id")
 
     assert response.status_code == 200
     assert response.json()["total"] == 12
@@ -317,3 +317,137 @@ def test_list_games_rejects_invalid_pagination_values():
         response = client.get(url)
 
         assert response.status_code == 422
+
+
+def test_list_games_sorts_by_name_ascending(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+        {"id": 3, "name": "Cyberpunk 2077", "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=name&sort_order=asc")
+
+    assert response.status_code == 200
+
+    games = response.json()["games"]
+
+    assert [game["name"] for game in games] == [
+        "Cyberpunk 2077",
+        "Elden Ring",
+        "Minecraft",
+    ]
+
+
+def test_list_games_sorts_by_name_descending(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "status": "Completed"},
+        {"id": 3, "name": "Cyberpunk 2077", "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=name&sort_order=desc")
+
+    assert response.status_code == 200
+
+    games = response.json()["games"]
+
+    assert [game["name"] for game in games] == [
+        "Minecraft",
+        "Elden Ring",
+        "Cyberpunk 2077",
+    ]
+
+
+def test_list_games_sorts_by_rating_ascending(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+        {"id": 2, "name": "Minecraft", "rating": 3.8, "status": "Completed"},
+        {"id": 3, "name": "Cyberpunk 2077", "rating": 4.2, "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=rating&sort_order=asc")
+
+    assert response.status_code == 200
+
+    games = response.json()["games"]
+
+    assert [game["rating"] for game in games] == [
+        3.8,
+        4.2,
+        4.5,
+    ]
+
+
+def test_list_games_rejects_invalid_sort_field(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=release_date")
+
+    assert response.status_code == 422
+
+
+def test_list_games_rejects_invalid_sort_order(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_order=random")
+
+    assert response.status_code == 422
+
+
+def test_list_games_places_unrated_games_last(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+        {"id": 2, "name": "Unknown Game", "rating": None, "status": "Playing"},
+        {"id": 3, "name": "Minecraft", "rating": 3.8, "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=rating&sort_order=asc")
+
+    assert response.status_code == 200
+
+    games = response.json()["games"]
+
+    assert [game["name"] for game in games] == [
+        "Minecraft",
+        "Elden Ring",
+        "Unknown Game",
+    ]
+
+
+def test_list_games_places_unrated_games_last_descending(monkeypatch):
+    sample_games = [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+        {"id": 2, "name": "Unknown Game", "rating": None, "status": "Playing"},
+        {"id": 3, "name": "Minecraft", "rating": 3.8, "status": "Completed"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: sample_games)
+
+    response = client.get("/games?sort_by=rating&sort_order=desc")
+
+    assert response.status_code == 200
+
+    games = response.json()["games"]
+
+    assert [game["name"] for game in games] == [
+        "Elden Ring",
+        "Minecraft",
+        "Unknown Game",
+    ]
