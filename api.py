@@ -41,12 +41,23 @@ def health_check():
 @app.get("/games")
 def list_games(
     status: str | None = Query(default=None),
+    search: str | None = Query(default=None),
     sort_by: str = Query(default="name"),
     sort_order: str = Query(default="asc"),
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
     games = get_games()
+
+    if search is not None:
+        search_term = search.strip().lower()
+
+        if search_term:
+            games = [
+                game
+                for game in games
+                if search_term in game["name"].lower()
+            ]
 
     valid_sort_fields = ["id", "name", "rating"]
     valid_sort_orders = ["asc", "desc"]

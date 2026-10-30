@@ -451,3 +451,53 @@ def test_list_games_places_unrated_games_last_descending(monkeypatch):
         "Minecraft",
         "Unknown Game",
     ]
+
+
+def test_list_games_searches_by_name(monkeypatch):
+    monkeypatch.setattr(
+        "api.get_games",
+        lambda: [
+            {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+            {"id": 2, "name": "The Witcher 3", "rating": 4.8, "status": "Completed"},
+            {"id": 3, "name": "Elden Ring Nightreign",
+                "rating": 4.0, "status": "Want to Play"},
+        ],
+    )
+
+    response = client.get("/games?search=ELDEN")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total"] == 2
+    assert len(data["games"]) == 2
+    assert all("elden" in game["name"].lower() for game in data["games"])
+
+
+def test_list_games_search_returns_no_matches(monkeypatch):
+    monkeypatch.setattr("api.get_games", lambda: [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+    ])
+
+    response = client.get("/games?search=minecraft")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 0
+    assert response.json()["games"] == []
+
+
+def test_list_games_combines_search_and_status(monkeypatch):
+    monkeypatch.setattr("api.get_games", lambda: [
+        {"id": 1, "name": "Elden Ring", "rating": 4.5, "status": "Playing"},
+        {"id": 2, "name": "Elden Ring Nightreign",
+            "rating": 4.0, "status": "Want to Play"},
+        {"id": 3, "name": "The Witcher 3", "rating": 4.8, "status": "Playing"},
+    ])
+
+    response = client.get("/games?search=elden&status=Playing")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["games"][0]["name"] == "Elden Ring"
