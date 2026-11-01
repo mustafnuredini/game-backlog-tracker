@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from database import get_games, get_game_by_rawg_id, add_game, update_game_status, delete_game
+from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
@@ -140,6 +140,19 @@ def list_games(
         "offset": offset,
         "games": paginated_games,
     }
+
+
+@app.get("/games/{game_id}")
+def get_game(game_id: int):
+    game = get_game_by_id(game_id)
+
+    if not game:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Game with ID {game_id} not found.",
+        )
+
+    return game
 
 
 @app.post("/games", status_code=201)

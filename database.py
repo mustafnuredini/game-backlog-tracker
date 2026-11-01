@@ -68,6 +68,18 @@ def get_game_by_rawg_id(rawg_id, db_path=DB_PATH):
         return dict(row) if row else None
 
 
+def get_game_by_id(game_id, db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+
+        row = connection.execute(
+            "SELECT * FROM games WHERE id = ?",
+            (game_id,),
+        ).fetchone()
+
+        return dict(row) if row else None
+
+
 def update_game_status(game_id, status, db_path=DB_PATH):
     allowed_statuses = {
         "Want to Play",

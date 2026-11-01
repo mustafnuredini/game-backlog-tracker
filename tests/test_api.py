@@ -501,3 +501,37 @@ def test_list_games_combines_search_and_status(monkeypatch):
 
     assert data["total"] == 1
     assert data["games"][0]["name"] == "Elden Ring"
+
+
+def test_get_game_by_id_returns_game(monkeypatch):
+    monkeypatch.setattr(
+        "api.get_game_by_id",
+        lambda game_id: {
+            "id": 1,
+            "rawg_id": 3498,
+            "name": "Grand Theft Auto V",
+            "released": "2013-09-17",
+            "rating": 4.5,
+            "status": "Playing",
+            "notes": "",
+        },
+    )
+
+    response = client.get("/games/1")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    assert response.json()["name"] == "Grand Theft Auto V"
+    assert response.json()["status"] == "Playing"
+
+
+def test_get_game_by_id_returns_404(monkeypatch):
+    monkeypatch.setattr(
+        "api.get_game_by_id",
+        lambda game_id: None,
+    )
+
+    response = client.get("/games/999999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Game with ID 999999 not found."

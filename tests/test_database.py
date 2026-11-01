@@ -2,7 +2,14 @@ import sqlite3
 
 import pytest
 
-from database import add_game, get_games, initialize_db, update_game_status, delete_game
+from database import (
+    add_game,
+    get_games,
+    get_game_by_id,
+    initialize_db,
+    update_game_status,
+    delete_game
+)
 
 
 @pytest.fixture
@@ -33,6 +40,29 @@ def test_get_games(test_db):
     assert len(games) == 2
     assert games[0]["name"] == "Baldur's Gate 3"
     assert games[1]["name"] == "Elden Ring"
+
+
+def test_get_game_by_id(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        "2022-02-25",
+        4.5,
+        db_path=test_db,
+    )
+
+    game = get_game_by_id(game_id, db_path=test_db)
+
+    assert game is not None
+    assert game["id"] == game_id
+    assert game["name"] == "Elden Ring"
+    assert game["rawg_id"] == 12345
+
+
+def test_get_nonexistent_game_by_id(test_db):
+    game = get_game_by_id(99999, db_path=test_db)
+
+    assert game is None
 
 
 def test_duplicate_rawg_id_rejected(test_db):
