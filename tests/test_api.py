@@ -535,3 +535,44 @@ def test_get_game_by_id_returns_404(monkeypatch):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Game with ID 999999 not found."
+
+
+def test_update_game_notes(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_notes",
+        lambda game_id, notes: True,
+    )
+
+    response = client.patch(
+        "/games/1/notes",
+        json={"notes": "Play with friends."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    assert response.json()["notes"] == "Play with friends."
+    assert response.json()["message"] == "Game notes updated successfully."
+
+
+def test_update_game_notes_not_found(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_notes",
+        lambda game_id, notes: False,
+    )
+
+    response = client.patch(
+        "/games/999999/notes",
+        json={"notes": "Test notes"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Game with ID 999999 not found."
+
+
+def test_update_game_notes_too_long():
+    response = client.patch(
+        "/games/1/notes",
+        json={"notes": "a" * 2001},
+    )
+
+    assert response.status_code == 422

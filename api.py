@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, delete_game
+from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, update_game_notes, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
@@ -26,6 +26,10 @@ class GameStatusUpdate(BaseModel):
         "Completed",
         "Dropped",
     ]
+
+
+class GameNotesUpdate(BaseModel):
+    notes: str = Field(max_length=2000)
 
 
 @app.get("/")
@@ -207,6 +211,23 @@ def update_status(game_id: int, update: GameStatusUpdate):
         "id": game_id,
         "status": update.status,
         "message": "Game status updated successfully.",
+    }
+
+
+@app.patch("/games/{game_id}/notes")
+def update_notes(game_id: int, update: GameNotesUpdate):
+    updated = update_game_notes(game_id, update.notes)
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Game with ID {game_id} not found.",
+        )
+
+    return {
+        "id": game_id,
+        "notes": update.notes,
+        "message": "Game notes updated successfully.",
     }
 
 

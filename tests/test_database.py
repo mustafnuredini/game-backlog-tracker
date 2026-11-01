@@ -8,6 +8,7 @@ from database import (
     get_game_by_id,
     initialize_db,
     update_game_status,
+    update_game_notes,
     delete_game
 )
 
@@ -117,5 +118,34 @@ def test_delete_game(test_db):
 
 def test_delete_nonexistent_game(test_db):
     result = delete_game(99999, db_path=test_db)
+
+    assert result is False
+
+
+def test_update_game_notes(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    result = update_game_notes(
+        game_id,
+        "Play with friends.",
+        db_path=test_db,
+    )
+
+    assert result is True
+
+    game = get_game_by_id(game_id, db_path=test_db)
+    assert game["notes"] == "Play with friends."
+
+
+def test_update_nonexistent_game_notes(test_db):
+    result = update_game_notes(
+        99999,
+        "Some notes",
+        db_path=test_db,
+    )
 
     assert result is False
