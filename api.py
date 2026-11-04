@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, update_game_notes, delete_game
+from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, update_game_notes, update_game_details, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
@@ -30,6 +30,12 @@ class GameStatusUpdate(BaseModel):
 
 class GameNotesUpdate(BaseModel):
     notes: str = Field(max_length=2000)
+
+
+class GameDetailsUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    released: date | None = None
+    rating: float | None = Field(default=None, ge=0, le=5)
 
 
 @app.get("/")
@@ -228,6 +234,42 @@ def update_notes(game_id: int, update: GameNotesUpdate):
         "id": game_id,
         "notes": update.notes,
         "message": "Game notes updated successfully.",
+    }
+
+
+@app.patch("/games/{game_id}/details")
+def update_game_details_endpoint(
+    game_id: int,
+    details: GameDetailsUpdate,
+):
+    updates = details.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise HTTPException(
+            status_code=422,
+            detail="At least one field must be provided",
+        )
+
+    if "name" in updates and updates["name"] is not None:
+        updates["name"] = updates["name"].strip()
+
+        if not updates["name"]:
+            raise HTTPException(
+                status_code=422,
+                detail="Game name cannot be empty",
+            )
+
+    updated = update_game_details(game_id, updates)
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail="Game not found",
+        )
+
+    return {
+        "message": "Game details updated successfully",
+        "game": get_game_by_id(game_id),
     }
 
 

@@ -9,6 +9,7 @@ from database import (
     initialize_db,
     update_game_status,
     update_game_notes,
+    update_game_details,
     delete_game
 )
 
@@ -145,6 +146,59 @@ def test_update_nonexistent_game_notes(test_db):
     result = update_game_notes(
         99999,
         "Some notes",
+        db_path=test_db,
+    )
+
+    assert result is False
+
+
+def test_update_game_details_single_field(test_db):
+    game_id = add_game(
+        3498,
+        "Grand Theft Auto V",
+        "2013-09-17",
+        4.5,
+        db_path=test_db,
+    )
+
+    update_game_details(
+        game_id,
+        {"rating": 4.8},
+        db_path=test_db,
+    )
+
+    game = get_game_by_id(game_id, db_path=test_db)
+
+    assert game["rating"] == 4.8
+    assert game["name"] == "Grand Theft Auto V"
+    assert game["released"] == "2013-09-17"
+
+
+def test_update_game_details_multiple_fields(test_db):
+    game_id = add_game(
+        3498,
+        "Grand Theft Auto V",
+        "2013-09-17",
+        4.5,
+        db_path=test_db,
+    )
+
+    update_game_details(
+        game_id,
+        {"name": "GTA V", "rating": 4.9},
+        db_path=test_db,
+    )
+
+    game = get_game_by_id(game_id, db_path=test_db)
+
+    assert game["name"] == "GTA V"
+    assert game["rating"] == 4.9
+
+
+def test_update_game_details_game_not_found(test_db):
+    result = update_game_details(
+        999,
+        {"rating": 4.8},
         db_path=test_db,
     )
 

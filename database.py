@@ -110,6 +110,31 @@ def update_game_notes(game_id, notes, db_path=DB_PATH):
         return cursor.rowcount > 0
 
 
+def update_game_details(game_id, updates, db_path=DB_PATH):
+    allowed_fields = {"name", "released", "rating"}
+
+    updates = {
+        key: value
+        for key, value in updates.items()
+        if key in allowed_fields
+    }
+
+    if not updates:
+        return False
+
+    fields = ", ".join(f"{key} = ?" for key in updates)
+    values = list(updates.values())
+    values.append(game_id)
+
+    with sqlite3.connect(db_path) as connection:
+        cursor = connection.execute(
+            f"UPDATE games SET {fields} WHERE id = ?",
+            values,
+        )
+
+        return cursor.rowcount > 0
+
+
 def delete_game(game_id, db_path=DB_PATH):
     with sqlite3.connect(db_path) as connection:
         cursor = connection.execute(

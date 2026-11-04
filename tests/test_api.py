@@ -576,3 +576,128 @@ def test_update_game_notes_too_long():
     )
 
     assert response.status_code == 422
+
+
+def test_update_game_details_rating_only(monkeypatch):
+    game = {
+        "id": 1,
+        "rawg_id": 3498,
+        "name": "Grand Theft Auto V",
+        "released": "2013-09-17",
+        "rating": 4.9,
+        "status": "Playing",
+        "notes": "",
+    }
+
+    monkeypatch.setattr(
+        "api.update_game_details",
+        lambda game_id, updates: True,
+    )
+    monkeypatch.setattr(
+        "api.get_game_by_id",
+        lambda game_id: game,
+    )
+
+    response = client.patch(
+        "/games/1/details",
+        json={"rating": 4.9},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["game"]["rating"] == 4.9
+
+
+def test_update_game_details_multiple_fields(monkeypatch):
+    game = {
+        "id": 1,
+        "rawg_id": 3498,
+        "name": "GTA V",
+        "released": "2013-09-17",
+        "rating": 4.9,
+        "status": "Playing",
+        "notes": "",
+    }
+
+    def mock_update(game_id, updates):
+        game.update(updates)
+        return True
+
+    monkeypatch.setattr("api.update_game_details", mock_update)
+    monkeypatch.setattr(
+        "api.get_game_by_id",
+        lambda game_id: game,
+    )
+
+    response = client.patch(
+        "/games/1/details",
+        json={
+            "name": "GTA V",
+            "rating": 4.9,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["game"]["name"] == "GTA V"
+    assert response.json()["game"]["rating"] == 4.9
+
+
+def test_update_game_details_not_found(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_details",
+        lambda game_id, updates: False,
+    )
+
+    response = client.patch(
+        "/games/999/details",
+        json={"rating": 4.8},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_game_details_empty_request():
+    response = client.patch(
+        "/games/1/details",
+        json={},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_game_details_blank_name(monkeypatch):
+    response = client.patch(
+        "/games/1/details",
+        json={"name": "   "},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_game_details_clear_rating(monkeypatch):
+    game = {
+        "id": 1,
+        "rawg_id": 3498,
+        "name": "Grand Theft Auto V",
+        "released": "2013-09-17",
+        "rating": None,
+        "status": "Playing",
+        "notes": "",
+    }
+
+    def mock_update(game_id, updates):
+        game.update(updates)
+        return True
+
+    monkeypatch.setattr("api.update_game_details", mock_update)
+    monkeypatch.setattr(
+        "api.get_game_by_id",
+        lambda game_id: game,
+    )
+
+    response = client.patch(
+        "/games/1/details",
+        json={"rating": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["game"]["rating"] is None
