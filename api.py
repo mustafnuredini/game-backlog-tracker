@@ -69,7 +69,7 @@ def list_games(
                 if search_term in game["name"].lower()
             ]
 
-    valid_sort_fields = ["id", "name", "rating"]
+    valid_sort_fields = ["id", "name", "rating", "released"]
     valid_sort_orders = ["asc", "desc"]
 
     if sort_by not in valid_sort_fields:

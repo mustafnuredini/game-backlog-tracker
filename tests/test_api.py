@@ -701,3 +701,49 @@ def test_update_game_details_clear_rating(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["game"]["rating"] is None
+
+
+def test_list_games_sort_by_released_ascending(monkeypatch):
+    games = [
+        {"id": 1, "name": "Game A", "released": "2023-01-01",
+            "rating": 4.0, "status": "Playing"},
+        {"id": 2, "name": "Game B", "released": "2020-01-01",
+            "rating": 4.5, "status": "Playing"},
+        {"id": 3, "name": "Game C", "released": None,
+            "rating": 3.5, "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: games)
+
+    response = client.get("/games?sort_by=released&sort_order=asc")
+
+    assert response.status_code == 200
+
+    results = response.json()["games"]
+
+    assert results[0]["name"] == "Game B"
+    assert results[1]["name"] == "Game A"
+    assert results[2]["name"] == "Game C"
+
+
+def test_list_games_sort_by_released_descending(monkeypatch):
+    games = [
+        {"id": 1, "name": "Game A", "released": "2023-01-01",
+            "rating": 4.0, "status": "Playing"},
+        {"id": 2, "name": "Game B", "released": "2020-01-01",
+            "rating": 4.5, "status": "Playing"},
+        {"id": 3, "name": "Game C", "released": None,
+            "rating": 3.5, "status": "Playing"},
+    ]
+
+    monkeypatch.setattr("api.get_games", lambda: games)
+
+    response = client.get("/games?sort_by=released&sort_order=desc")
+
+    assert response.status_code == 200
+
+    results = response.json()["games"]
+
+    assert results[0]["name"] == "Game A"
+    assert results[1]["name"] == "Game B"
+    assert results[2]["name"] == "Game C"
