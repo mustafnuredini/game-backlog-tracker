@@ -6,6 +6,7 @@ from database import (
     add_game,
     get_games,
     get_game_by_id,
+    get_game_stats,
     initialize_db,
     update_game_status,
     update_game_notes,
@@ -203,3 +204,44 @@ def test_update_game_details_game_not_found(test_db):
     )
 
     assert result is False
+
+
+def test_get_game_stats(test_db):
+    add_game(3498, "GTA V", "2013-09-17", 4.5, db_path=test_db)
+    add_game(3328, "The Witcher 3", "2015-05-18", 5.0, db_path=test_db)
+    add_game(9999, "Unreleased Game", None, None, db_path=test_db)
+
+    stats = get_game_stats(db_path=test_db)
+
+    assert stats["total_games"] == 3
+    assert stats["average_rating"] == 4.75
+    assert stats["games_by_status"] == {
+        "Want to Play": 3
+    }
+    assert stats["games_with_release_date"] == 2
+    assert stats["games_without_release_date"] == 1
+
+
+def test_get_game_stats_empty_database(test_db):
+    stats = get_game_stats(db_path=test_db)
+
+    assert stats["total_games"] == 0
+    assert stats["average_rating"] is None
+    assert stats["games_by_status"] == {}
+    assert stats["games_with_release_date"] == 0
+    assert stats["games_without_release_date"] == 0
+
+
+def test_get_game_stats_different_statuses(test_db):
+    game1 = add_game(3498, "GTA V", db_path=test_db)
+    game2 = add_game(3328, "The Witcher 3", db_path=test_db)
+
+    update_game_status(game1, "Playing", db_path=test_db)
+    update_game_status(game2, "Completed", db_path=test_db)
+
+    stats = get_game_stats(db_path=test_db)
+
+    assert stats["games_by_status"] == {
+        "Playing": 1,
+        "Completed": 1,
+    }

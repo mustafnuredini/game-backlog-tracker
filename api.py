@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from database import get_games, get_game_by_id, get_game_by_rawg_id, add_game, update_game_status, update_game_notes, update_game_details, delete_game
+from database import get_games, get_game_by_id, get_game_by_rawg_id, get_game_stats, add_game, update_game_status, update_game_notes, update_game_details, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
@@ -150,6 +150,11 @@ def list_games(
         "offset": offset,
         "games": paginated_games,
     }
+
+
+@app.get("/games/stats")
+def game_stats():
+    return get_game_stats()
 
 
 @app.get("/games/{game_id}")

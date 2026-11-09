@@ -45,6 +45,11 @@ def test_client(tmp_path, monkeypatch):
             game_id, db_path=db_path
         ),
     )
+    monkeypatch.setattr(
+        api,
+        "get_game_stats",
+        lambda: database.get_game_stats(db_path=db_path),
+    )
 
     return TestClient(api.app)
 
@@ -118,3 +123,41 @@ def test_duplicate_game_is_rejected(test_client):
     games = test_client.get("/games").json()
     assert games["total"] == 1
     assert len(games["games"]) == 1
+
+
+def test_get_game_stats_integration(test_client):
+    client = test_client
+
+    client.post(
+        "/games",
+        json={
+            "rawg_id": 3498,
+            "name": "Grand Theft Auto V",
+            "released": "2013-09-17",
+            "rating": 4.5,
+        },
+    )
+
+    client.post(
+        "/games",
+        json={
+            "rawg_id": 3328,
+            "name": "The Witcher 3",
+            "released": "2015-05-18",
+            "rating": 5.0,
+        },
+    )
+
+    response = client.get("/games/stats")
+
+    assert response.status_code == 200
+
+    stats = response.json()
+
+    assert stats["total_games"] == 2
+    assert stats["average_rating"] == 4.75
+    assert stats["games_by_status"] == {
+        "Want to Play": 2
+    }
+    assert stats["games_with_release_date"] == 2
+    assert stats["games_without_release_date"] == 0

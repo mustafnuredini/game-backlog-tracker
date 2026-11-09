@@ -80,6 +80,51 @@ def get_game_by_id(game_id, db_path=DB_PATH):
         return dict(row) if row else None
 
 
+def get_game_stats(db_path=DB_PATH):
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+
+        total_games = connection.execute(
+            "SELECT COUNT(*) FROM games"
+        ).fetchone()[0]
+
+        average_rating = connection.execute(
+            "SELECT AVG(rating) FROM games"
+        ).fetchone()[0]
+
+        status_counts = connection.execute(
+            """
+            SELECT status, COUNT(*) AS count
+            FROM games
+            GROUP BY status
+            """
+        ).fetchall()
+
+        release_counts = connection.execute(
+            """
+            SELECT
+                COUNT(released) AS with_release_date,
+                COUNT(*) - COUNT(released) AS without_release_date
+            FROM games
+            """
+        ).fetchone()
+
+        return {
+            "total_games": total_games,
+            "average_rating": (
+                round(average_rating, 2)
+                if average_rating is not None
+                else None
+            ),
+            "games_by_status": {
+                row["status"]: row["count"]
+                for row in status_counts
+            },
+            "games_with_release_date": release_counts["with_release_date"],
+            "games_without_release_date": release_counts["without_release_date"],
+        }
+
+
 def update_game_status(game_id, status, db_path=DB_PATH):
     allowed_statuses = {
         "Want to Play",

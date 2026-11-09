@@ -747,3 +747,28 @@ def test_list_games_sort_by_released_descending(monkeypatch):
     assert results[0]["name"] == "Game A"
     assert results[1]["name"] == "Game B"
     assert results[2]["name"] == "Game C"
+
+
+def test_get_game_stats(monkeypatch):
+    expected_stats = {
+        "total_games": 10,
+        "average_rating": 4.25,
+        "games_by_status": {
+            "Want to Play": 4,
+            "Playing": 3,
+            "Completed": 2,
+            "Dropped": 1,
+        },
+        "games_with_release_date": 8,
+        "games_without_release_date": 2,
+    }
+
+    monkeypatch.setattr(
+        "api.get_game_stats",
+        lambda: expected_stats,
+    )
+
+    response = client.get("/games/stats")
+
+    assert response.status_code == 200
+    assert response.json() == expected_stats
