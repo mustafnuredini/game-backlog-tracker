@@ -1,4 +1,6 @@
 import './App.css'
+import games from './data/games'
+import GameCard from './components/GameCard'
 
 function App() {
   return (
@@ -61,12 +63,14 @@ function App() {
               <p className="eyebrow">YOUR COLLECTION</p>
               <h2>Recently Added</h2>
             </div>
+
             <button>View Library →</button>
           </div>
 
-          <div className="empty-state">
-            <h3>Your game library starts here.</h3>
-            <p>We'll bring your saved games into this dashboard soon.</p>
+          <div className="game-grid">
+            {games.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
           </div>
         </section>
       </main>
