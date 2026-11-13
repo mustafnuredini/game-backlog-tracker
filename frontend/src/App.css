@@ -305,3 +305,63 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.library-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.library-controls input,
+.library-controls select {
+  background: #171a23;
+  color: #f1f1f5;
+  border: 1px solid #292e3b;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.library-controls input {
+  width: 220px;
+}
+
+.library-controls input::placeholder {
+  color: #777e90;
+}
+
+.library-controls input:focus,
+.library-controls select:focus {
+  border-color: #7860c7;
+}
+
+.library-controls select {
+  cursor: pointer;
+}
+
+.no-results {
+  color: #9298a8;
+  font-size: 14px;
+  padding: 30px 0;
+}
+
+/* Keep controls usable on smaller screens */
+@media (max-width: 600px) {
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .library-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .library-controls input {
+    width: 100%;
+  }
+}
