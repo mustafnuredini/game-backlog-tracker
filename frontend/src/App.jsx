@@ -1,9 +1,26 @@
 import './App.css'
-import games from './data/games'
 import GameCard from './components/GameCard'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getGames } from './api/games'
 
 function App() {
+  const [games, setGames] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    async function loadGames() {
+      try {
+        const data = await getGames()
+        setGames(data.games)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadGames()
+  }, [])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('All Games')
 

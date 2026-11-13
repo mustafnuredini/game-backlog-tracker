@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from database import get_games, get_game_by_id, get_game_by_rawg_id, get_game_stats, add_game, update_game_status, update_game_notes, update_game_details, delete_game
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -9,6 +10,15 @@ app = FastAPI(
     title="Game Backlog Tracker API",
     description="An API for managing your personal video game backlog.",
     version="1.0.0",
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
