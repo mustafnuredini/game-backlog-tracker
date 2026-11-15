@@ -2,11 +2,17 @@ function GameCard({ game }) {
     return (
         <article className="game-card">
             <div className="game-image-container">
-                <img
-                    src={game.image}
-                    alt={game.name}
-                    className="game-image"
-                />
+                {game.image_url ? (
+                    <img
+                        src={game.image_url || '/fallback-game.png'}
+                        alt={game.name}
+                        className="game-image"
+                    />
+                ) : (
+                    <div className="game-image-placeholder">
+                        Artwork unavailable
+                    </div>
+                )}
 
                 <span className={`status-badge ${game.status.toLowerCase().replaceAll(' ', '-')}`}>
                     {game.status}

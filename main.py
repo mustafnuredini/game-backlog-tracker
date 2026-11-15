@@ -93,6 +93,7 @@ def save_game(game):
             name=game.get("name", "Unknown title"),
             released=game.get("released"),
             rating=game.get("rating"),
+            image_url=game.get("background_image"),
         )
     except Exception as error:
         print(f"Could not save game: {error}")

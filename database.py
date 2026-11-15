@@ -13,6 +13,7 @@ def initialize_db(db_path=DB_PATH):
                 name TEXT NOT NULL,
                 released TEXT,
                 rating REAL,
+                image_url TEXT,
                 status TEXT NOT NULL DEFAULT 'Want to Play'
                     CHECK (
                         status IN (
@@ -27,15 +28,37 @@ def initialize_db(db_path=DB_PATH):
             )
         """)
 
+        # Check whether the image_url column already exists.
+        columns = [
+            row[1] for row in connection.execute(
+                "PRAGMA table_info(games)"
+            )
+        ]
 
-def add_game(rawg_id, name, released=None, rating=None, db_path=DB_PATH):
+        # Add it to existing databases if necessary.
+        if "image_url" not in columns:
+            connection.execute(
+                "ALTER TABLE games ADD COLUMN image_url TEXT"
+            )
+
+
+def add_game(
+    rawg_id,
+    name,
+    released=None,
+    rating=None,
+    image_url=None,
+    db_path=DB_PATH
+):
     with sqlite3.connect(db_path) as connection:
         cursor = connection.execute(
             """
-            INSERT INTO games (rawg_id, name, released, rating)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO games (
+                rawg_id, name, released, rating, image_url
+            )
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (rawg_id, name, released, rating),
+            (rawg_id, name, released, rating, image_url),
         )
 
         return cursor.lastrowid
@@ -47,7 +70,15 @@ def get_games(db_path=DB_PATH):
 
         rows = connection.execute(
             """
-            SELECT id, rawg_id, name, released, rating, status, notes
+            SELECT
+                id,
+                rawg_id,
+                name,
+                released,
+                rating,
+                image_url,
+                status,
+                notes
             FROM games
             ORDER BY name COLLATE NOCASE
             """
@@ -156,7 +187,7 @@ def update_game_notes(game_id, notes, db_path=DB_PATH):
 
 
 def update_game_details(game_id, updates, db_path=DB_PATH):
-    allowed_fields = {"name", "released", "rating"}
+    allowed_fields = {"name", "released", "rating", "image_url"}
 
     updates = {
         key: value
