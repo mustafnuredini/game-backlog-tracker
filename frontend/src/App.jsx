@@ -1,17 +1,23 @@
 import './App.css'
 import GameCard from './components/GameCard'
 import { useState, useEffect } from 'react'
-import { getGames } from './api/games'
+import { getGames, getGameStats } from './api/games'
 
 function App() {
   const [games, setGames] = useState([])
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   useEffect(() => {
     async function loadGames() {
       try {
-        const data = await getGames()
-        setGames(data.games)
+        const [gamesData, statsData] = await Promise.all([
+          getGames(),
+          getGameStats()
+        ])
+
+        setGames(gamesData.games)
+        setStats(statsData)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -72,19 +78,19 @@ function App() {
         <section className="stats">
           <div className="stat-card">
             <span>Total Games</span>
-            <strong>24</strong>
+            <strong>{stats?.total_games ?? 0}</strong>
           </div>
           <div className="stat-card">
             <span>Playing</span>
-            <strong>3</strong>
+            <strong>{stats?.games_by_status?.['Playing'] ?? 0}</strong>
           </div>
           <div className="stat-card">
             <span>Completed</span>
-            <strong>12</strong>
+            <strong>{stats?.games_by_status?.['Completed'] ?? 0}</strong>
           </div>
           <div className="stat-card">
             <span>Want to Play</span>
-            <strong>9</strong>
+            <strong>{stats?.games_by_status?.['Want to Play'] ?? 0}</strong>
           </div>
         </section>
 

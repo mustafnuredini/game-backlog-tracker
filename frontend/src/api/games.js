@@ -9,3 +9,13 @@ export async function getGames() {
 
     return response.json()
 }
+
+export async function getGameStats() {
+    const response = await fetch(`${API_URL}/games/stats`)
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch game statistics')
+    }
+
+    return response.json()
+}
