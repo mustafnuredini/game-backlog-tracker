@@ -1,45 +1,98 @@
+import os
 import sqlite3
 from pathlib import Path
+
+import psycopg
+from psycopg.rows import dict_row
 
 DB_PATH = Path(__file__).resolve().parent / "games.db"
 
 
+def get_connection(db_path=DB_PATH):
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url and db_path == DB_PATH:
+        return psycopg.connect(
+            database_url,
+            row_factory=dict_row,
+        )
+
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def execute_query(connection, query, params=()):
+    if isinstance(connection, psycopg.Connection):
+        query = query.replace("?", "%s")
+
+    return connection.execute(query, params)
+
+
 def initialize_db(db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS games (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                rawg_id INTEGER UNIQUE,
-                name TEXT NOT NULL,
-                released TEXT,
-                rating REAL,
-                image_url TEXT,
-                status TEXT NOT NULL DEFAULT 'Want to Play'
-                    CHECK (
-                        status IN (
-                            'Want to Play',
-                            'Playing',
-                            'Completed',
-                            'Dropped'
-                        )
-                    ),
-                notes TEXT DEFAULT '',
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    with get_connection(db_path) as connection:
 
-        # Check whether the image_url column already exists.
-        columns = [
-            row[1] for row in connection.execute(
-                "PRAGMA table_info(games)"
-            )
-        ]
+        if isinstance(connection, psycopg.Connection):
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS games (
+                    id SERIAL PRIMARY KEY,
+                    rawg_id INTEGER UNIQUE,
+                    name TEXT NOT NULL,
+                    released TEXT,
+                    rating REAL,
+                    image_url TEXT,
+                    status TEXT NOT NULL DEFAULT 'Want to Play'
+                        CHECK (
+                            status IN (
+                                'Want to Play',
+                                'Playing',
+                                'Completed',
+                                'Dropped'
+                            )
+                        ),
+                    notes TEXT DEFAULT '',
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
-        # Add it to existing databases if necessary.
-        if "image_url" not in columns:
-            connection.execute(
-                "ALTER TABLE games ADD COLUMN image_url TEXT"
-            )
+            connection.execute("""
+                ALTER TABLE games
+                ADD COLUMN IF NOT EXISTS image_url TEXT
+            """)
+
+        else:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS games (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rawg_id INTEGER UNIQUE,
+                    name TEXT NOT NULL,
+                    released TEXT,
+                    rating REAL,
+                    image_url TEXT,
+                    status TEXT NOT NULL DEFAULT 'Want to Play'
+                        CHECK (
+                            status IN (
+                                'Want to Play',
+                                'Playing',
+                                'Completed',
+                                'Dropped'
+                            )
+                        ),
+                    notes TEXT DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            columns = [
+                row["name"] for row in connection.execute(
+                    "PRAGMA table_info(games)"
+                )
+            ]
+
+            if "image_url" not in columns:
+                connection.execute(
+                    "ALTER TABLE games ADD COLUMN image_url TEXT"
+                )
 
 
 def add_game(
@@ -50,25 +103,26 @@ def add_game(
     image_url=None,
     db_path=DB_PATH
 ):
-    with sqlite3.connect(db_path) as connection:
-        cursor = connection.execute(
+    with get_connection(db_path) as connection:
+        cursor = execute_query(
+            connection,
             """
             INSERT INTO games (
                 rawg_id, name, released, rating, image_url
             )
             VALUES (?, ?, ?, ?, ?)
+            RETURNING id
             """,
             (rawg_id, name, released, rating, image_url),
         )
 
-        return cursor.lastrowid
+        return cursor.fetchone()["id"]
 
 
 def get_games(db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
-
-        rows = connection.execute(
+    with get_connection(db_path) as connection:
+        rows = execute_query(
+            connection,
             """
             SELECT
                 id,
@@ -80,7 +134,7 @@ def get_games(db_path=DB_PATH):
                 status,
                 notes
             FROM games
-            ORDER BY name COLLATE NOCASE
+            ORDER BY LOWER(name)
             """
         ).fetchall()
 
@@ -88,10 +142,9 @@ def get_games(db_path=DB_PATH):
 
 
 def get_game_by_rawg_id(rawg_id, db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
-
-        row = connection.execute(
+    with get_connection(db_path) as connection:
+        row = execute_query(
+            connection,
             "SELECT * FROM games WHERE rawg_id = ?",
             (rawg_id,),
         ).fetchone()
@@ -100,10 +153,9 @@ def get_game_by_rawg_id(rawg_id, db_path=DB_PATH):
 
 
 def get_game_by_id(game_id, db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
-
-        row = connection.execute(
+    with get_connection(db_path) as connection:
+        row = execute_query(
+            connection,
             "SELECT * FROM games WHERE id = ?",
             (game_id,),
         ).fetchone()
@@ -112,33 +164,46 @@ def get_game_by_id(game_id, db_path=DB_PATH):
 
 
 def get_game_stats(db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
+    with get_connection(db_path) as connection:
 
         total_games = connection.execute(
-            "SELECT COUNT(*) FROM games"
-        ).fetchone()[0]
+            "SELECT COUNT(*) AS total_games FROM games"
+        ).fetchone()["total_games"]
 
         average_rating = connection.execute(
-            "SELECT AVG(rating) FROM games"
-        ).fetchone()[0]
+            "SELECT AVG(rating) AS average_rating FROM games"
+        ).fetchone()["average_rating"]
 
-        status_counts = connection.execute(
-            """
+        games_with_release_date = connection.execute("""
+            SELECT COUNT(*) AS games_with_release_date
+            FROM games
+            WHERE released IS NOT NULL
+            AND released != ''
+        """).fetchone()["games_with_release_date"]
+
+        games_without_release_date = connection.execute("""
+            SELECT COUNT(*) AS games_without_release_date
+            FROM games
+            WHERE released IS NULL
+            OR released = ''
+        """).fetchone()["games_without_release_date"]
+
+        status_counts = connection.execute("""
             SELECT status, COUNT(*) AS count
             FROM games
             GROUP BY status
-            """
-        ).fetchall()
+        """).fetchall()
 
-        release_counts = connection.execute(
-            """
+        release_counts = connection.execute("""
             SELECT
-                COUNT(released) AS with_release_date,
-                COUNT(*) - COUNT(released) AS without_release_date
+                SUBSTR(released, 1, 4) AS year,
+                COUNT(*) AS count
             FROM games
-            """
-        ).fetchone()
+            WHERE released IS NOT NULL
+              AND released != ''
+            GROUP BY year
+            ORDER BY year
+        """).fetchall()
 
         return {
             "total_games": total_games,
@@ -151,25 +216,34 @@ def get_game_stats(db_path=DB_PATH):
                 row["status"]: row["count"]
                 for row in status_counts
             },
-            "games_with_release_date": release_counts["with_release_date"],
-            "games_without_release_date": release_counts["without_release_date"],
+            "release_counts": {
+                row["year"]: row["count"]
+                for row in release_counts
+            },
+            "games_with_release_date": games_with_release_date,
+            "games_without_release_date": games_without_release_date,
         }
 
 
 def update_game_status(game_id, status, db_path=DB_PATH):
-    allowed_statuses = {
+    valid_statuses = {
         "Want to Play",
         "Playing",
         "Completed",
         "Dropped",
     }
 
-    if status not in allowed_statuses:
-        raise ValueError(f"Invalid game status: {status}")
+    if status not in valid_statuses:
+        raise ValueError("Invalid game status")
 
-    with sqlite3.connect(db_path) as connection:
-        cursor = connection.execute(
-            "UPDATE games SET status = ? WHERE id = ?",
+    with get_connection(db_path) as connection:
+        cursor = execute_query(
+            connection,
+            """
+            UPDATE games
+            SET status = ?
+            WHERE id = ?
+            """,
             (status, game_id),
         )
 
@@ -177,9 +251,14 @@ def update_game_status(game_id, status, db_path=DB_PATH):
 
 
 def update_game_notes(game_id, notes, db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        cursor = connection.execute(
-            "UPDATE games SET notes = ? WHERE id = ?",
+    with get_connection(db_path) as connection:
+        cursor = execute_query(
+            connection,
+            """
+            UPDATE games
+            SET notes = ?
+            WHERE id = ?
+            """,
             (notes, game_id),
         )
 
@@ -187,24 +266,47 @@ def update_game_notes(game_id, notes, db_path=DB_PATH):
 
 
 def update_game_details(game_id, updates, db_path=DB_PATH):
-    allowed_fields = {"name", "released", "rating", "image_url"}
-
-    updates = {
-        key: value
-        for key, value in updates.items()
-        if key in allowed_fields
-    }
-
     if not updates:
         return False
 
-    fields = ", ".join(f"{key} = ?" for key in updates)
+    allowed_fields = {
+        "name",
+        "released",
+        "rating",
+        "image_url",
+        "status",
+        "notes",
+    }
+
+    if "status" in updates:
+        valid_statuses = {
+            "Want to Play",
+            "Playing",
+            "Completed",
+            "Dropped",
+        }
+
+        if updates["status"] not in valid_statuses:
+            raise ValueError("Invalid game status")
+
+    if not set(updates).issubset(allowed_fields):
+        raise ValueError("Invalid field in updates")
+
+    fields = ", ".join(
+        f"{field} = ?" for field in updates
+    )
+
     values = list(updates.values())
     values.append(game_id)
 
-    with sqlite3.connect(db_path) as connection:
-        cursor = connection.execute(
-            f"UPDATE games SET {fields} WHERE id = ?",
+    with get_connection(db_path) as connection:
+        cursor = execute_query(
+            connection,
+            f"""
+            UPDATE games
+            SET {fields}
+            WHERE id = ?
+            """,
             values,
         )
 
@@ -212,8 +314,9 @@ def update_game_details(game_id, updates, db_path=DB_PATH):
 
 
 def delete_game(game_id, db_path=DB_PATH):
-    with sqlite3.connect(db_path) as connection:
-        cursor = connection.execute(
+    with get_connection(db_path) as connection:
+        cursor = execute_query(
+            connection,
             "DELETE FROM games WHERE id = ?",
             (game_id,),
         )
