@@ -1,13 +1,24 @@
 import './App.css'
 import GameCard from './components/GameCard'
 import { useState, useEffect } from 'react'
-import { getGames, getGameStats } from './api/games'
+import {
+  getGames,
+  getGameStats,
+  searchGames,
+  addGame
+} from './api/games'
 
 function App() {
   const [games, setGames] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showAddGame, setShowAddGame] = useState(false)
+  const [gameQuery, setGameQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [addError, setAddError] = useState('')
+  const [addingGameId, setAddingGameId] = useState(null)
   useEffect(() => {
     async function loadGames() {
       try {
@@ -29,6 +40,53 @@ function App() {
   }, [])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('All Games')
+
+  async function handleSearchGames() {
+    if (!gameQuery.trim()) {
+      setAddError('Please enter a game name.')
+      return
+    }
+
+    setSearchLoading(true)
+    setAddError('')
+    setSearchResults([])
+
+    try {
+      const results = await searchGames(gameQuery)
+      setSearchResults(results)
+    } catch (err) {
+      setAddError(err.message)
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  async function handleAddGame(game) {
+    setAddingGameId(game.rawg_id)
+    setAddError('')
+
+    try {
+      const newGame = await addGame(game)
+
+      setGames((currentGames) => [
+        ...currentGames,
+        newGame
+      ])
+
+      const updatedStats = await getGameStats()
+      setStats(updatedStats)
+
+      setSearchResults((currentResults) =>
+        currentResults.filter(
+          (result) => result.rawg_id !== game.rawg_id
+        )
+      )
+    } catch (err) {
+      setAddError(err.message)
+    } finally {
+      setAddingGameId(null)
+    }
+  }
 
   const filteredGames = games.filter((game) => {
     const matchesSearch = game.name
@@ -120,6 +178,81 @@ function App() {
               </select>
             </div>
           </div>
+
+          <button
+            className="add-game-button"
+            onClick={() => {
+              setShowAddGame(!showAddGame)
+              setAddError('')
+              setSearchResults([])
+              setGameQuery('')
+            }}
+          >
+            + Add Game
+          </button>
+
+
+          {showAddGame && (
+            <div className="add-game-panel">
+              <h3>Find a Game</h3>
+              <p>Search RAWG's game database to add a title to your library.</p>
+
+              <div className="add-game-search">
+                <input
+                  type="text"
+                  placeholder="Search for a game..."
+                  value={gameQuery}
+                  onChange={(event) => setGameQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      handleSearchGames()
+                    }
+                  }}
+                />
+
+                <button
+                  onClick={handleSearchGames}
+                  disabled={searchLoading}
+                >
+                  {searchLoading ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+
+              {addError && (
+                <p className="add-game-error">{addError}</p>
+              )}
+
+              <div className="search-results">
+                {searchResults.map((game) => (
+                  <div className="search-result-card" key={game.rawg_id}>
+                    {game.image_url ? (
+                      <img src={game.image_url} alt={game.name} />
+                    ) : (
+                      <div className="search-result-placeholder">
+                        No artwork
+                      </div>
+                    )}
+
+                    <div className="search-result-info">
+                      <h4>{game.name}</h4>
+                      <p>
+                        {game.released || 'Release date unknown'}
+                        {' · '}
+                        ★ {game.rating ?? 'N/A'}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddGame(game)}
+                      disabled={addingGameId === game.rawg_id}
+                    >
+                      {addingGameId === game.rawg_id ? 'Adding...' : 'Add'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="game-grid">
             {filteredGames.length > 0 ? (

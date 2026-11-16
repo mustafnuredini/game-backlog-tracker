@@ -5,6 +5,14 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
 import sqlite3
+import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+RAWG_API_KEY = os.getenv("RAWG_API_KEY")
+RAWG_API_URL = "https://api.rawg.io/api/games"
 
 app = FastAPI(
     title="Game Backlog Tracker API",
@@ -27,6 +35,7 @@ class GameCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     released: date | None = None
     rating: float | None = Field(default=None, ge=0, le=5)
+    image_url: str | None = None
 
 
 class GameStatusUpdate(BaseModel):
@@ -162,6 +171,65 @@ def list_games(
     }
 
 
+@app.get("/games/search")
+def search_games_api(query: str):
+    if not query.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Search query cannot be empty.",
+        )
+
+    if not RAWG_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="RAWG API key is not configured.",
+        )
+
+    params = {
+        "key": RAWG_API_KEY,
+        "search": query.strip(),
+        "page_size": 5,
+    }
+
+    try:
+        response = requests.get(
+            RAWG_API_URL,
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=504,
+            detail="RAWG request timed out.",
+        )
+
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not connect to RAWG.",
+        )
+
+    except ValueError:
+        raise HTTPException(
+            status_code=502,
+            detail="RAWG returned invalid data.",
+        )
+
+    return [
+        {
+            "rawg_id": game["id"],
+            "name": game.get("name", "Unknown title"),
+            "released": game.get("released"),
+            "rating": game.get("rating"),
+            "image_url": game.get("background_image"),
+        }
+        for game in data.get("results", [])
+    ]
+
+
 @app.get("/games/stats")
 def game_stats():
     return get_game_stats()
@@ -200,6 +268,7 @@ def create_game(game: GameCreate):
                 else None
             ),
             rating=game.rating,
+            image_url=game.image_url,
         )
     except sqlite3.IntegrityError:
         raise HTTPException(
@@ -215,6 +284,7 @@ def create_game(game: GameCreate):
         "rating": game.rating,
         "status": "Want to Play",
         "notes": "",
+        "image_url": game.image_url,
     }
 
 

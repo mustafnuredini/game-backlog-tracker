@@ -772,3 +772,53 @@ def test_get_game_stats(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == expected_stats
+
+
+def test_search_games_success(monkeypatch):
+    def mock_get(*args, **kwargs):
+        class MockResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {
+                    "results": [
+                        {
+                            "id": 123,
+                            "name": "Elden Ring",
+                            "released": "2022-02-25",
+                            "rating": 4.5,
+                            "background_image": "https://example.com/elden-ring.jpg",
+                        }
+                    ]
+                }
+
+        return MockResponse()
+
+    monkeypatch.setattr(api.requests, "get", mock_get)
+
+    response = client.get("/games/search?query=elden%20ring")
+
+    assert response.status_code == 200
+
+    games = response.json()
+
+    assert len(games) == 1
+    assert games[0]["rawg_id"] == 123
+    assert games[0]["name"] == "Elden Ring"
+    assert games[0]["rating"] == 4.5
+    assert games[0]["image_url"] == "https://example.com/elden-ring.jpg"
+
+
+def test_search_games_api_error(monkeypatch):
+    def mock_get(*args, **kwargs):
+        raise api.requests.exceptions.ConnectionError(
+            "Connection failed"
+        )
+
+    monkeypatch.setattr(api.requests, "get", mock_get)
+
+    response = client.get("/games/search?query=elden%20ring")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Could not connect to RAWG."
