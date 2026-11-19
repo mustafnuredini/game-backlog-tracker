@@ -1,10 +1,23 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from database import get_games, get_game_by_id, get_game_by_rawg_id, get_game_stats, add_game, update_game_status, update_game_notes, update_game_details, delete_game
+from database import (
+    get_games,
+    get_game_by_id,
+    get_game_by_rawg_id,
+    get_game_stats,
+    add_game,
+    update_game_status,
+    update_game_notes,
+    update_game_details,
+    delete_game,
+    initialize_db,
+)
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
 import sqlite3
+import psycopg
 import os
 import requests
 from dotenv import load_dotenv
@@ -14,16 +27,32 @@ load_dotenv()
 RAWG_API_KEY = os.getenv("RAWG_API_KEY")
 RAWG_API_URL = "https://api.rawg.io/api/games"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    initialize_db()
+    yield
+
+
 app = FastAPI(
     title="Game Backlog Tracker API",
     description="An API for managing your personal video game backlog.",
     version="1.0.0",
+    lifespan=lifespan,
 )
+
+
+allowed_origins = ["http://localhost:5173"]
+
+frontend_url = os.getenv("FRONTEND_URL")
+
+if frontend_url:
+    allowed_origins.append(frontend_url.rstrip("/"))
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -270,7 +299,7 @@ def create_game(game: GameCreate):
             rating=game.rating,
             image_url=game.image_url,
         )
-    except sqlite3.IntegrityError:
+    except (sqlite3.IntegrityError, psycopg.IntegrityError):
         raise HTTPException(
             status_code=409,
             detail="This game is already in your backlog.",
