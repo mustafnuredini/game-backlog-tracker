@@ -1,4 +1,11 @@
-function GameCard({ game }) {
+const STATUS_OPTIONS = [
+    'Want to Play',
+    'Playing',
+    'Completed',
+    'Dropped',
+]
+
+function GameCard({ game, onStatusChange, updating }) {
     return (
         <article className="game-card">
             <div className="game-image-container">
@@ -26,6 +33,21 @@ function GameCard({ game }) {
                 </div>
 
                 <p className="game-genre">{game.genre}</p>
+
+                <label className="game-status-control">
+                    <span className="sr-only">Status for {game.name}</span>
+                    <select
+                        value={game.status}
+                        disabled={updating}
+                        onChange={(event) => onStatusChange(game.id, event.target.value)}
+                    >
+                        {STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                                {status}
+                            </option>
+                        ))}
+                    </select>
+                </label>
             </div>
         </article>
     )

@@ -33,6 +33,23 @@ export async function searchGames(query) {
     return response.json()
 }
 
+export async function updateGameStatus(gameId, status) {
+    const response = await fetch(`${API_URL}/games/${gameId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to update game status')
+    }
+
+    return response.json()
+}
+
 export async function addGame(game) {
     const response = await fetch(`${API_URL}/games`, {
         method: 'POST',

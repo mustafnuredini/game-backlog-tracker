@@ -5,7 +5,8 @@ import {
   getGames,
   getGameStats,
   searchGames,
-  addGame
+  addGame,
+  updateGameStatus
 } from './api/games'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [addError, setAddError] = useState('')
   const [addingGameId, setAddingGameId] = useState(null)
+  const [updatingStatusId, setUpdatingStatusId] = useState(null)
   useEffect(() => {
     async function loadGames() {
       try {
@@ -85,6 +87,37 @@ function App() {
       setAddError(err.message)
     } finally {
       setAddingGameId(null)
+    }
+  }
+
+  async function handleStatusChange(gameId, status) {
+    const previousStatus = games.find((game) => game.id === gameId)?.status
+
+    setUpdatingStatusId(gameId)
+    setError('')
+
+    // Update optimistically so the card reflects the choice immediately.
+    setGames((currentGames) =>
+      currentGames.map((game) =>
+        game.id === gameId ? { ...game, status } : game
+      )
+    )
+
+    try {
+      await updateGameStatus(gameId, status)
+
+      const updatedStats = await getGameStats()
+      setStats(updatedStats)
+    } catch (err) {
+      // Roll back the status if the update failed.
+      setGames((currentGames) =>
+        currentGames.map((game) =>
+          game.id === gameId ? { ...game, status: previousStatus } : game
+        )
+      )
+      setError(err.message)
+    } finally {
+      setUpdatingStatusId(null)
     }
   }
 
@@ -255,9 +288,18 @@ function App() {
           )}
 
           <div className="game-grid">
+            {error && (
+              <p className="library-error" role="alert">{error}</p>
+            )}
+
             {filteredGames.length > 0 ? (
               filteredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  updating={updatingStatusId === game.id}
+                  onStatusChange={handleStatusChange}
+                />
               ))
             ) : (
               <p className="no-results">No games found.</p>
