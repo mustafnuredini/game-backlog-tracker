@@ -46,6 +46,8 @@ function App() {
   }, [])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('All Games')
+  const [sortBy, setSortBy] = useState('none')
+  const [sortDirection, setSortDirection] = useState('asc')
 
   async function handleSearchGames() {
     if (!gameQuery.trim()) {
@@ -186,6 +188,45 @@ function App() {
 
     return matchesSearch && matchesStatus
   })
+
+  const sortedGames = [...filteredGames].sort((a, b) => {
+    let aVal, bVal, direction = 1
+
+    switch (sortBy) {
+      case 'name-asc':
+        aVal = a.name.toLowerCase()
+        bVal = b.name.toLowerCase()
+        break
+      case 'name-desc':
+        aVal = a.name.toLowerCase()
+        bVal = b.name.toLowerCase()
+        direction = -1
+        break
+      case 'rating-asc':
+        aVal = (a.rating ?? 0)
+        bVal = (b.rating ?? 0)
+        break
+      case 'rating-desc':
+        aVal = (a.rating ?? 0)
+        bVal = (b.rating ?? 0)
+        direction = -1
+        break
+      case 'date-asc':
+        aVal = a.released || ''
+        bVal = b.released || ''
+        break
+      case 'date-desc':
+        aVal = a.released || ''
+        bVal = b.released || ''
+        direction = -1
+        break
+      default:
+        return 0
+    }
+
+    const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0
+    return comparison * direction
+  })
   return (
     <div className="app">
       <aside className="sidebar">
@@ -263,6 +304,19 @@ function App() {
                 <option value="Playing">Playing</option>
                 <option value="Completed">Completed</option>
                 <option value="Want to Play">Want to Play</option>
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+              >
+                <option value="none">Sort by</option>
+                <option value="name-asc">Name A–Z</option>
+                <option value="name-desc">Name Z–A</option>
+                <option value="rating-asc">Rating low–high</option>
+                <option value="rating-desc">Rating high–low</option>
+                <option value="date-asc">Release date oldest</option>
+                <option value="date-desc">Release date newest</option>
               </select>
             </div>
           </div>
@@ -347,8 +401,8 @@ function App() {
               <p className="library-error" role="alert">{error}</p>
             )}
 
-            {filteredGames.length > 0 ? (
-              filteredGames.map((game) => (
+            {sortedGames.length > 0 ? (
+              sortedGames.map((game) => (
                 <GameCard
                   key={game.id}
                   game={game}
