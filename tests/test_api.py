@@ -578,6 +578,53 @@ def test_update_game_notes_too_long():
     assert response.status_code == 422
 
 
+def test_update_game_notes_empty(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_notes",
+        lambda game_id, notes: True,
+    )
+
+    response = client.patch(
+        "/games/1/notes",
+        json={"notes": ""},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["notes"] == ""
+
+
+def test_update_game_notes_long(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_notes",
+        lambda game_id, notes: True,
+    )
+
+    long_notes = "a" * 2000
+    response = client.patch(
+        "/games/1/notes",
+        json={"notes": long_notes},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["notes"] == long_notes
+
+
+def test_update_game_notes_special_characters(monkeypatch):
+    monkeypatch.setattr(
+        "api.update_game_notes",
+        lambda game_id, notes: True,
+    )
+
+    special_notes = "Notes with 'quotes', \"double quotes\", & ampersand, <tags>, and 新しい"
+    response = client.patch(
+        "/games/1/notes",
+        json={"notes": special_notes},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["notes"] == special_notes
+
+
 def test_update_game_details_rating_only(monkeypatch):
     game = {
         "id": 1,

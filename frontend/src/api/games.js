@@ -79,3 +79,20 @@ export async function deleteGame(gameId) {
 
     return response.json()
 }
+
+export async function updateGameNotes(gameId, notes) {
+    const response = await fetch(`${API_URL}/games/${gameId}/notes`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes }),
+    })
+
+    if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to update game notes')
+    }
+
+    return response.json()
+}

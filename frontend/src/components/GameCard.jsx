@@ -5,7 +5,26 @@ const STATUS_OPTIONS = [
     'Dropped',
 ]
 
-function GameCard({ game, onStatusChange, onDelete, updating, deleting }) {
+function GameCard({ game, onStatusChange, onDelete, onNotesChange, updating, deleting, updatingNotes }) {
+    const [isEditingNotes, setIsEditingNotes] = useState(false)
+    const [notesText, setNotesText] = useState(game.notes || '')
+
+    const handleSaveNotes = () => {
+        onNotesChange(game.id, notesText)
+        setIsEditingNotes(false)
+    }
+
+    const handleCancelNotes = () => {
+        setNotesText(game.notes || '')
+        setIsEditingNotes(false)
+    }
+
+    const handleClearNotes = () => {
+        setNotesText('')
+    }
+
+    const displayNotes = game.notes && game.notes.trim() !== ''
+
     return (
         <article className="game-card">
             <div className="game-image-container">
@@ -49,6 +68,66 @@ function GameCard({ game, onStatusChange, onDelete, updating, deleting }) {
                     </select>
                 </label>
 
+                <div className="game-notes-section">
+                    {isEditingNotes ? (
+                        <div className="notes-editor">
+                            <label htmlFor={`notes-${game.id}`} className="sr-only">
+                                Notes for {game.name}
+                            </label>
+                            <textarea
+                                id={`notes-${game.id}`}
+                                value={notesText}
+                                onChange={(e) => setNotesText(e.target.value)}
+                                placeholder="Add personal notes..."
+                                maxLength={2000}
+                                disabled={updatingNotes}
+                                rows={3}
+                            />
+                            <div className="notes-actions">
+                                <span className="notes-char-count">
+                                    {notesText.length}/2000
+                                </span>
+                                <div className="notes-buttons">
+                                    <button
+                                        type="button"
+                                        className="notes-clear-button"
+                                        onClick={handleClearNotes}
+                                        disabled={updatingNotes || notesText === ''}
+                                        aria-label="Clear notes"
+                                    >
+                                        Clear
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="notes-cancel-button"
+                                        onClick={handleCancelNotes}
+                                        disabled={updatingNotes}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="notes-save-button"
+                                        onClick={handleSaveNotes}
+                                        disabled={updatingNotes}
+                                    >
+                                        {updatingNotes ? 'Saving...' : 'Save'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="notes-display" onClick={() => setIsEditingNotes(true)}>
+                            {displayNotes ? (
+                                <p className="notes-content">{game.notes}</p>
+                            ) : (
+                                <p className="notes-placeholder">Click to add notes...</p>
+                            )}
+                            <span className="notes-edit-hint">✎ Edit</span>
+                        </div>
+                    )}
+                </div>
+
                 <button
                     className="delete-button"
                     onClick={() => onDelete(game.id)}
@@ -61,5 +140,7 @@ function GameCard({ game, onStatusChange, onDelete, updating, deleting }) {
         </article>
     )
 }
+
+import { useState } from 'react'
 
 export default GameCard

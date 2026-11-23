@@ -153,6 +153,57 @@ def test_update_nonexistent_game_notes(test_db):
     assert result is False
 
 
+def test_update_game_notes_empty(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    # First set some notes
+    update_game_notes(game_id, "Initial notes", db_path=test_db)
+
+    # Then clear them
+    result = update_game_notes(game_id, "", db_path=test_db)
+
+    assert result is True
+
+    game = get_game_by_id(game_id, db_path=test_db)
+    assert game["notes"] == ""
+
+
+def test_update_game_notes_long(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    long_notes = "a" * 2000
+    result = update_game_notes(game_id, long_notes, db_path=test_db)
+
+    assert result is True
+
+    game = get_game_by_id(game_id, db_path=test_db)
+    assert game["notes"] == long_notes
+
+
+def test_update_game_notes_special_characters(test_db):
+    game_id = add_game(
+        12345,
+        "Elden Ring",
+        db_path=test_db,
+    )
+
+    special_notes = "Notes with 'quotes', \"double quotes\", & ampersand, <tags>, and 新しい"
+    result = update_game_notes(game_id, special_notes, db_path=test_db)
+
+    assert result is True
+
+    game = get_game_by_id(game_id, db_path=test_db)
+    assert game["notes"] == special_notes
+
+
 def test_update_game_details_single_field(test_db):
     game_id = add_game(
         3498,

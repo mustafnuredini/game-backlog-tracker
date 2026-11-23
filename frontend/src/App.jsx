@@ -7,6 +7,7 @@ import {
   searchGames,
   addGame,
   updateGameStatus,
+  updateGameNotes,
   deleteGame
 } from './api/games'
 
@@ -22,6 +23,7 @@ function App() {
   const [addError, setAddError] = useState('')
   const [addingGameId, setAddingGameId] = useState(null)
   const [updatingStatusId, setUpdatingStatusId] = useState(null)
+  const [updatingNotesId, setUpdatingNotesId] = useState(null)
   const [deletingGameId, setDeletingGameId] = useState(null)
   useEffect(() => {
     async function loadGames() {
@@ -143,6 +145,34 @@ function App() {
       setError(err.message)
     } finally {
       setDeletingGameId(null)
+    }
+  }
+
+  async function handleNotesChange(gameId, notes) {
+    const previousNotes = games.find((game) => game.id === gameId)?.notes
+
+    setUpdatingNotesId(gameId)
+    setError('')
+
+    // Update optimistically
+    setGames((currentGames) =>
+      currentGames.map((game) =>
+        game.id === gameId ? { ...game, notes } : game
+      )
+    )
+
+    try {
+      await updateGameNotes(gameId, notes)
+    } catch (err) {
+      // Roll back on failure
+      setGames((currentGames) =>
+        currentGames.map((game) =>
+          game.id === gameId ? { ...game, notes: previousNotes } : game
+        )
+      )
+      setError(err.message)
+    } finally {
+      setUpdatingNotesId(null)
     }
   }
 
@@ -323,8 +353,10 @@ function App() {
                   key={game.id}
                   game={game}
                   updating={updatingStatusId === game.id}
+                  updatingNotes={updatingNotesId === game.id}
                   deleting={deletingGameId === game.id}
                   onStatusChange={handleStatusChange}
+                  onNotesChange={handleNotesChange}
                   onDelete={handleDeleteGame}
                 />
               ))

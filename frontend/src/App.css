@@ -663,3 +663,173 @@ h1 {
     height: 68px;
   }
 }
+
+/* Notes section */
+.game-notes-section {
+  margin-top: 14px;
+}
+
+.notes-display {
+  padding: 10px 12px;
+  background: #12141c;
+  border: 1px solid #292e3b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  position: relative;
+}
+
+.notes-display:hover {
+  border-color: #7860c7;
+  background: #1a1829;
+}
+
+.notes-content {
+  color: #e8e8ed;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.notes-placeholder {
+  color: #777e90;
+  font-size: 13px;
+  margin: 0;
+  font-style: italic;
+}
+
+.notes-edit-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-size: 11px;
+  color: #777e90;
+  pointer-events: none;
+}
+
+.notes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notes-editor textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #12141c;
+  color: #f1f1f5;
+  border: 1px solid #292e3b;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.notes-editor textarea:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.notes-editor textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notes-editor textarea::placeholder {
+  color: #777e90;
+}
+
+.notes-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notes-char-count {
+  font-size: 11px;
+  color: #9298a8;
+  white-space: nowrap;
+}
+
+.notes-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.notes-clear-button,
+.notes-cancel-button,
+.notes-save-button {
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.notes-clear-button {
+  background: transparent;
+  color: #fb7185;
+  border: 1px solid #5a2128;
+}
+
+.notes-clear-button:hover:not(:disabled) {
+  background: #3a181c;
+  border-color: #fb7185;
+  color: #fecaca;
+}
+
+.notes-clear-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-cancel-button {
+  background: #1f2330;
+  color: #b4b8c8;
+  border: 1px solid #292e3b;
+}
+
+.notes-cancel-button:hover:not(:disabled) {
+  background: #292e3b;
+  color: #d6d9e3;
+}
+
+.notes-cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-save-button {
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+}
+
+.notes-save-button:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.notes-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .notes-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notes-buttons {
+    justify-content: flex-end;
+  }
+}
