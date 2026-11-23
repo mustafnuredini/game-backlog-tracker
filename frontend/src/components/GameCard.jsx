@@ -5,7 +5,7 @@ const STATUS_OPTIONS = [
     'Dropped',
 ]
 
-function GameCard({ game, onStatusChange, updating }) {
+function GameCard({ game, onStatusChange, onDelete, updating, deleting }) {
     return (
         <article className="game-card">
             <div className="game-image-container">
@@ -48,6 +48,15 @@ function GameCard({ game, onStatusChange, updating }) {
                         ))}
                     </select>
                 </label>
+
+                <button
+                    className="delete-button"
+                    onClick={() => onDelete(game.id)}
+                    disabled={deleting}
+                    aria-label={`Delete ${game.name}`}
+                >
+                    {deleting ? 'Deleting...' : 'Delete'}
+                </button>
             </div>
         </article>
     )

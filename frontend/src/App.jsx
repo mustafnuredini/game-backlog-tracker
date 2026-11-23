@@ -6,7 +6,8 @@ import {
   getGameStats,
   searchGames,
   addGame,
-  updateGameStatus
+  updateGameStatus,
+  deleteGame
 } from './api/games'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
   const [addError, setAddError] = useState('')
   const [addingGameId, setAddingGameId] = useState(null)
   const [updatingStatusId, setUpdatingStatusId] = useState(null)
+  const [deletingGameId, setDeletingGameId] = useState(null)
   useEffect(() => {
     async function loadGames() {
       try {
@@ -118,6 +120,29 @@ function App() {
       setError(err.message)
     } finally {
       setUpdatingStatusId(null)
+    }
+  }
+
+  async function handleDeleteGame(gameId) {
+    const previousGames = games
+
+    setDeletingGameId(gameId)
+    setError('')
+
+    // Optimistically remove the game
+    setGames((currentGames) => currentGames.filter((game) => game.id !== gameId))
+
+    try {
+      await deleteGame(gameId)
+
+      const updatedStats = await getGameStats()
+      setStats(updatedStats)
+    } catch (err) {
+      // Roll back if the delete failed
+      setGames(previousGames)
+      setError(err.message)
+    } finally {
+      setDeletingGameId(null)
     }
   }
 
@@ -298,7 +323,9 @@ function App() {
                   key={game.id}
                   game={game}
                   updating={updatingStatusId === game.id}
+                  deleting={deletingGameId === game.id}
                   onStatusChange={handleStatusChange}
+                  onDelete={handleDeleteGame}
                 />
               ))
             ) : (

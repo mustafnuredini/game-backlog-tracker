@@ -328,6 +328,39 @@ h1 {
   cursor: not-allowed;
 }
 
+/* Delete button on each game card */
+.delete-button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #3a181c;
+  color: #fb7185;
+  border: 1px solid #5a2128;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.delete-button:hover:not(:disabled) {
+  background: #5a2128;
+  border-color: #fb7185;
+  color: #fecaca;
+}
+
+.delete-button:focus {
+  outline: none;
+  border-color: #fb7185;
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.15);
+}
+
+.delete-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Library-level error (e.g. status update failure) */
 .library-error {
   grid-column: 1 / -1;

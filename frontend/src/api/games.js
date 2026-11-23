@@ -66,3 +66,16 @@ export async function addGame(game) {
 
     return response.json()
 }
+
+export async function deleteGame(gameId) {
+    const response = await fetch(`${API_URL}/games/${gameId}`, {
+        method: 'DELETE',
+    })
+
+    if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to delete game')
+    }
+
+    return response.json()
+}
